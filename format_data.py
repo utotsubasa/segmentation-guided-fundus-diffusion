@@ -6,8 +6,9 @@ import dataclasses
 from dataclasses import dataclass
 import shutil
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 from rich.progress import track
+from cv2 import createCLAHE
 
 # phases
 @dataclass
@@ -185,9 +186,54 @@ def prepare_grayscale_dataset():
             save_path = gray_phase_folder / color_image_path.name
             gray_image.save(save_path)
             
-        
+def prepare_equalized_dataset():
+    color_data_folder = Path(DATASET_ROOT) / "data"
+    equalized_data_folder = Path(DATASET_ROOT) / "equalized_data"
+
+    equalized_data_folder.mkdir(parents=True, exist_ok=True)
+    for phase in PHASES:
+        equalized_data_folder.joinpath(phase).mkdir(parents=True, exist_ok=True)
+
+    for phase in PHASES:
+        color_phase_folder = color_data_folder / phase
+        equalized_phase_folder = equalized_data_folder / phase
+        equalized_phase_folder.mkdir(parents=True, exist_ok=True)
+
+        color_image_paths = color_phase_folder.iterdir()
+        for color_image_path in color_image_paths:
+            gray_image = Image.open(color_image_path).convert("L")
+            equalized_image = ImageOps.equalize(gray_image)
+            save_path = equalized_phase_folder / color_image_path.name
+            equalized_image.save(save_path)
+
+def prepare_clahe_dataset():
+    color_data_folder = Path(DATASET_ROOT) / "data"
+    clahe_data_folder = Path(DATASET_ROOT) / "clahe_data"
+
+    clahe_data_folder.mkdir(parents=True, exist_ok=True)
+    for phase in PHASES:
+        clahe_data_folder.joinpath(phase).mkdir(parents=True, exist_ok=True)
+    
+    clahe = createCLAHE(clipLimit=3, tileGridSize=(32, 32))
+
+    for phase in PHASES:
+        color_phase_folder = color_data_folder / phase
+        clahe_phase_folder = clahe_data_folder / phase
+        clahe_phase_folder.mkdir(parents=True, exist_ok=True)
+
+        color_image_paths = color_phase_folder.iterdir()
+        for color_image_path in color_image_paths:
+            gray_image = Image.open(color_image_path).convert("L")
+            clahe_image = np.array(gray_image)
+            clahe_image = clahe.apply(clahe_image)
+            clahe_image = Image.fromarray(clahe_image)
+            save_path = clahe_phase_folder / color_image_path.name
+            clahe_image.save(save_path)
+
 if __name__ == "__main__":
     # SEED = 42
     # random = Random(SEED)
     # prepare_dataset(random)
-    prepare_grayscale_dataset()
+    # prepare_grayscale_dataset()
+    # prepare_equalized_dataset()
+    prepare_clahe_dataset()
