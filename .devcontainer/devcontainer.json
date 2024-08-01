@@ -1,0 +1,11 @@
+{
+	"name": "Existing Dockerfile",
+	"build": {
+		"context": "..",
+		"dockerfile": "../Dockerfile"
+	},
+	"runArgs": [
+		"--gpus=all",
+		"--shm-size=32g"
+	]
+}
