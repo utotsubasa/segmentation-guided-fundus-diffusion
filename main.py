@@ -1,5 +1,7 @@
 import os
 from argparse import ArgumentParser
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 # torch imports
 import torch
@@ -17,6 +19,8 @@ import datasets
 from training import TrainingConfig, train_loop
 from eval import evaluate_generation, evaluate_sample_many
 
+OUTPUT_ROOT = "outputs"
+
 def main(
     mode,
     img_size,
@@ -31,7 +35,9 @@ def main(
     train_batch_size,
     eval_batch_size,
     num_epochs,
+    num_workers,
     resume_epoch=None,
+    resume_dir=None,
     use_ablated_segmentations=False,
     eval_shuffle_dataloader=True,
 
@@ -46,12 +52,17 @@ def main(
 
     # load config
     output_dir = '{}-{}-{}'.format(model_type.lower(), dataset, img_size)  # the model namy locally and on the HF Hub
+    output_dir = os.path.join(OUTPUT_ROOT, output_dir)
+
     if segmentation_guided:
         output_dir += "-segguided"
         assert seg_dir is not None, "must provide segmentation directory for segmentation guided training/sampling"
 
     if use_ablated_segmentations or eval_mask_removal or eval_blank_mask:
         output_dir += "-ablated"
+    
+    date = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y%m%d_%H%M%S")
+    output_dir = os.path.join(output_dir, date)
 
     print("output dir: {}".format(output_dir))
 
@@ -269,7 +280,8 @@ def main(
         train_dataloader = torch.utils.data.DataLoader(
                 dataset_train, 
                 batch_size=config.train_batch_size, 
-                shuffle=True
+                shuffle=True,
+                num_workers=num_workers
                 )
 
         eval_dataloader = torch.utils.data.DataLoader(
@@ -313,11 +325,13 @@ def main(
     )
 
     if (mode == "train" and resume_epoch is not None) or "eval" in mode:
+        assert resume_dir is not None
+
         if mode == "train":
-            print("resuming from model at training epoch {}".format(resume_epoch))
+            print(f"resuming from model in {resume_dir} at training epoch {resume_epoch}")
         elif "eval" in mode:
             print("loading saved model...")
-        model = model.from_pretrained(os.path.join(config.output_dir, 'unet'), use_safetensors=True)
+        model = model.from_pretrained(os.path.join(resume_dir, 'unet'), use_safetensors=True)
 
     model = nn.DataParallel(model)
     model.to(device)
@@ -401,7 +415,8 @@ if __name__ == "__main__":
     parser.add_argument('--eval_batch_size', type=int, default=8)
     parser.add_argument('--num_epochs', type=int, default=200)
     parser.add_argument('--resume_epoch', type=int, default=None, help='resume training starting at this epoch')
-
+    parser.add_argument('--resume_dir', type=str, default=None)
+    parser.add_argument("--num_workers", type=int, default=2)
     # novel options
     parser.add_argument('--use_ablated_segmentations', action='store_true', help='use mask ablated training and any evaluation? sometimes randomly remove class(es) from mask during training and sampling.')
 
@@ -411,7 +426,7 @@ if __name__ == "__main__":
     # args only used in eval
     parser.add_argument('--eval_mask_removal', action='store_true', help='if true, evaluate gradually removing anatomies from mask and re-sampling')
     parser.add_argument('--eval_blank_mask', action='store_true', help='if true, evaluate sampling conditioned on blank (zeros) masks')
-    parser.add_argument('--eval_sample_size', type=int, default=1000, help='number of images to sample when using eval_many mode')
+    parser.add_argument('--eval_sample_size', type=int, default=100, help='number of images to sample when using eval_many mode')
 
     args = parser.parse_args()
 
@@ -429,7 +444,9 @@ if __name__ == "__main__":
         args.train_batch_size,
         args.eval_batch_size,
         args.num_epochs,
+        args.num_workers,
         args.resume_epoch,
+        args.resume_dir,
         args.use_ablated_segmentations,
         not args.eval_noshuffle_dataloader,
 

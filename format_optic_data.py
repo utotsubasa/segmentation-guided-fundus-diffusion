@@ -231,9 +231,9 @@ def prepare_clahe_dataset():
             clahe_image.save(save_path)
 
 if __name__ == "__main__":
-    # SEED = 42
-    # random = Random(SEED)
-    # prepare_dataset(random)
-    # prepare_grayscale_dataset()
+    SEED = 42
+    random = Random(SEED)
+    prepare_dataset(random)
+    prepare_grayscale_dataset()
     # prepare_equalized_dataset()
-    prepare_clahe_dataset()
+    # prepare_clahe_dataset()
