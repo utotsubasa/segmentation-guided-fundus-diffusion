@@ -10,11 +10,36 @@ Most of parts of this repository inclueds codes from this repository:
 
 https://github.com/mazurowski-lab/segmentation-guided-diffusion
 
-## How to use (from the original repository)
-### 1) Package Installation
+## Usage
+### Environment setup
+Enter your VSCode devcontainer. Setup will be done automatically.
+
+### Prepare dataset
+Dataset: SMDG-19
+
+(Citation: Kiefer, Riley, et al. "A Catalog of Public Glaucoma Datasets for Machine Learning Applications: A detailed description and analysis of public glaucoma datasets available to machine learning engineers tackling glaucoma-related problems using retinal fundus images and OCT images." Proceedings of the 2023 7th International Conference on Information System and Data Mining. 2023.)
+
+Download at [this kaggle dataset site](https://www.kaggle.com/datasets/deathtrooper/multichannel-glaucoma-benchmark-dataset/data)
+
+Then run the following commands:
+```bash
+$ python3 format_optic_data.py
+$ python3 format_vessel_data.py
+$ python3 mix_both_dta.py
+```
+### Execute Training
+Run:
+```bash
+$ bash run.sh
+```
+
+---
+
+### How to use (from the original repository)
+#### 1) Package Installation
 This codebase was created with Python 3.11. First, install PyTorch for your computer's CUDA version (check it by running `nvidia-smi` if you're not sure) according to the provided command at https://pytorch.org/get-started/locally/; this codebase was made with `torch==2.1.2` and `torchvision==0.16.2` on CUDA 12.2. Next, run `pip3 install -r requirements.txt` to install the required packages.
 
-### 2a) Use Pre-Trained Models
+#### 2a) Use Pre-Trained Models
 
 We provide pre-trained model checkpoints (`.safetensor` files) and config (`.json`) files from our paper for the [Duke Breast MRI](https://www.cancerimagingarchive.net/collection/duke-breast-cancer-mri/) and [CT Organ](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=61080890) datasets, [here](https://drive.google.com/drive/folders/1OaOGBLfpUFe_tmpvZGEe2Mv2gow32Y8u). These include:
 
@@ -28,7 +53,7 @@ Once you've downloaded the checkpoint and config file for your model of choice, 
 
 Next, you can proceed to the [**Evaluation/Sampling**](https://github.com/mazurowski-lab/segmentation-guided-diffusion#3-evaluationsampling) section below to generate images from these models.
 
-### 2b) Train Your Own Models
+#### 2b) Train Your Own Models
 
 #### Data Preparation
 
@@ -111,7 +136,7 @@ where:
 
 To also train your model with mask ablation (randomly removing classes from the masks to each the model to condition on masks with missing classes; see our paper for details), simply also add the option `--use_ablated_segmentations`.
 
-### 3) Evaluation/Sampling
+#### 3) Evaluation/Sampling
 
 Sampling images with a trained model is run similarly to training. For example, 100 samples from an unconditional model can be generated with the command:
 ```bash
@@ -133,6 +158,6 @@ Note that the code will automatically use the checkpoint from the training run, 
 ```
 This will generate images conditioned on the segmentation masks in `MASK_FOLDER/all/test`. Segmentation masks should be saved as image files (e.g., `.png`) with integer values starting at zero for each object class, i.e., 0, 1, 2.
 
-### Additional Options/Config
+#### Additional Options/Config
 Our code has further options for training and evaluation; run `python3 main.py --help` for more information. Further settings still can be changed under `class TrainingConfig:` in `training.py` (some of which are exposed as command-line options for `main.py`, and some of which are not).
 
